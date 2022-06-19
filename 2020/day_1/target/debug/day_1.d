@@ -1,0 +1,1 @@
+/home/jakub/Workspace/rust/advent_of_code/2020/day_1/target/debug/day_1: /home/jakub/Workspace/rust/advent_of_code/2020/day_1/src/input.txt /home/jakub/Workspace/rust/advent_of_code/2020/day_1/src/main.rs
