@@ -50,16 +50,15 @@ fn main() {
     let lines = input.lines();
 
     let (left, right): (Vec<i32>, Vec<i32>) = lines
-        .filter_map(|line| {
+        .map(|line| {
             let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() != 2 {
-                return None;
-            }
+            assert!(parts.len() == 2, "Invalid input, expected 2 numbers");
 
-            if let (Ok(a), Ok(b)) = (parts[0].parse::<i32>(), parts[1].parse::<i32>()) {
-                return Some((a, b));
-            }
-            None
+            let nums: Vec<i32> = parts
+                .into_iter()
+                .map(|x| x.parse().expect("Expected a number"))
+                .collect();
+            (nums[0], nums[1])
         })
         .unzip();
 
