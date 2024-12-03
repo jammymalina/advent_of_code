@@ -10,7 +10,7 @@ fn count_safe_reports(reports: Vec<Vec<i32>>) {
             };
             differences
                 .iter()
-                .all(|&x| gradient_check(x) && (x.abs() >= 1 && x.abs() <= 3)) as u32
+                .all(|&x| gradient_check(x) && (1..4).contains(&x.abs())) as u32
         })
         .sum();
 
@@ -30,11 +30,11 @@ fn count_safe_reports_dampener(reports: Vec<Vec<i32>>) {
                 };
                 differences
                     .iter()
-                    .all(|&x| gradient_check(x) && (x.abs() >= 1 && x.abs() <= 3))
+                    .all(|&x| gradient_check(x) && (1..4).contains(&x.abs()))
             };
 
             (validate(report)
-                || (0..report.len()).into_iter().any(|skip_index| {
+                || (0..report.len()).any(|skip_index| {
                     let test_report: Vec<i32> = report[..skip_index]
                         .iter()
                         .chain(report[skip_index + 1..].iter())
