@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 fn calculate_distance(mut left: Vec<i32>, mut right: Vec<i32>) {
-    left.sort();
-    right.sort();
+    left.sort_unstable();
+    right.sort_unstable();
 
     let distance_total: i32 = left
         .into_iter()
@@ -14,8 +14,8 @@ fn calculate_distance(mut left: Vec<i32>, mut right: Vec<i32>) {
 }
 
 fn calculate_similarity(mut left: Vec<i32>, mut right: Vec<i32>) {
-    left.sort();
-    right.sort();
+    left.sort_unstable();
+    right.sort_unstable();
 
     let mut left_index: usize = 0;
     let mut right_index: usize = 0;
@@ -64,5 +64,5 @@ fn main() {
         .unzip();
 
     calculate_distance(left.clone(), right.clone());
-    calculate_similarity(left.clone(), right.clone());
+    calculate_similarity(left, right);
 }
