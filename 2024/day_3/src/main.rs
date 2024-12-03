@@ -19,22 +19,20 @@ enum Expr {
 }
 
 struct Calculator {
-    expressions: Vec<Expr>,
     enabled_default: bool,
 }
 
 impl Calculator {
-    const fn new(expressions: Vec<Expr>) -> Self {
+    const fn new() -> Self {
         Self {
-            expressions,
             enabled_default: true,
         }
     }
 
-    fn exec(&self) -> i32 {
+    fn exec(&self, expressions: &[Expr]) -> i32 {
         let mut enabled = self.enabled_default;
 
-        self.expressions
+        expressions
             .iter()
             .map(|expr| match expr {
                 Expr::Do => {
@@ -88,11 +86,11 @@ fn parse_mul_expr(input: &str) -> IResult<&str, Expr> {
 }
 
 fn parse_do(input: &str) -> IResult<&str, Expr> {
-    map(tag("do()"), |_s: &str| Expr::Do)(input)
+    map(tag("do()"), |_| Expr::Do)(input)
 }
 
 fn parse_dont(input: &str) -> IResult<&str, Expr> {
-    map(tag("don't()"), |_s: &str| Expr::Dont)(input)
+    map(tag("don't()"), |_| Expr::Dont)(input)
 }
 
 fn parse_expr(input: &str) -> IResult<&str, Expr> {
@@ -128,8 +126,8 @@ fn main() {
     let input = include_str!("input.txt");
 
     let expressions = parse_input(input);
-    let calc = Calculator::new(expressions);
-    let result = calc.exec();
+    let calc = Calculator::new();
+    let result = calc.exec(&expressions);
 
     println!("Sum of all multiplications: {result}");
 }
