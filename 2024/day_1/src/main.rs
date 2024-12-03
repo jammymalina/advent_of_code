@@ -6,7 +6,7 @@ fn calculate_distance(mut left: Vec<i32>, mut right: Vec<i32>) {
 
     let distance_total: i32 = left
         .into_iter()
-        .zip(right.into_iter())
+        .zip(right)
         .map(|(a, b)| (a - b).abs())
         .sum();
 
