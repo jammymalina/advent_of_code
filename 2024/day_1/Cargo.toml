@@ -8,3 +8,5 @@ edition = "2021"
 [lints.clippy]
 pedantic = "warn"
 nursery = "warn"
+
+src/input.txt
