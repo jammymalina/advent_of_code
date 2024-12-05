@@ -11,25 +11,25 @@ use nom::{
 
 type PageUpdates = Vec<Vec<i32>>;
 
-struct Manual {
-    ordering_rules: HashSet<(i32, i32)>,
+struct PageOrderingRules {
+    rules: HashSet<(i32, i32)>,
 }
 
-impl Manual {
-    fn new(ordering_rules: Vec<(i32, i32)>) -> Self {
+impl PageOrderingRules {
+    fn new(rules: Vec<(i32, i32)>) -> Self {
         Self {
-            ordering_rules: ordering_rules.into_iter().collect(),
+            rules: rules.into_iter().collect(),
         }
     }
 
     fn check_page_update_order(&self, page_update: &[i32]) -> bool {
         page_update
             .windows(2)
-            .all(|w| !self.ordering_rules.contains(&(w[1], w[0])))
+            .all(|w| !self.rules.contains(&(w[1], w[0])))
     }
 
-    fn check_page_numbers(&self, a: i32, b: i32) -> Ordering {
-        if self.ordering_rules.contains(&(a, b)) {
+    fn sort_page_numbers(&self, a: i32, b: i32) -> Ordering {
+        if self.rules.contains(&(a, b)) {
             Ordering::Less
         } else {
             Ordering::Equal
@@ -53,22 +53,24 @@ fn parse_comma_list(input: &str) -> IResult<&str, Vec<i32>> {
     separated_list1(char(','), parse_integer)(input)
 }
 
-fn parse_input(input: &str) -> IResult<&str, (Manual, PageUpdates)> {
+fn parse_input(input: &str) -> IResult<&str, (PageOrderingRules, PageUpdates)> {
     let (input, pairs) = parse_integer_pairs(input)?;
     let (input, _) = many1(line_ending)(input)?;
     let (input, lists) = separated_list1(line_ending, parse_comma_list)(input)?;
 
-    Ok((input, (Manual::new(pairs), lists)))
+    Ok((input, (PageOrderingRules::new(pairs), lists)))
 }
 
 fn main() {
     let input = include_str!("input.txt");
 
-    let (_, (manual, page_updates)) = parse_input(input).unwrap();
+    let (_, (ordering_rules, page_updates)) = parse_input(input).unwrap();
 
     let middle_page_sum: i32 = page_updates
         .iter()
-        .filter(|page_update| page_update.len() >= 3 && manual.check_page_update_order(page_update))
+        .filter(|page_update| {
+            page_update.len() >= 3 && ordering_rules.check_page_update_order(page_update)
+        })
         .map(|page_update| page_update[page_update.len() / 2])
         .sum();
 
@@ -77,13 +79,13 @@ fn main() {
     let incorrectly_sorted_pages: PageUpdates = page_updates
         .into_iter()
         .filter(|page_update| {
-            page_update.len() >= 3 && !manual.check_page_update_order(page_update)
+            page_update.len() >= 3 && !ordering_rules.check_page_update_order(page_update)
         })
         .collect();
 
     let mut middle_page_sum: i32 = 0;
     for mut page_update in incorrectly_sorted_pages {
-        page_update.sort_by(|&a, &b| manual.check_page_numbers(a, b));
+        page_update.sort_by(|&a, &b| ordering_rules.sort_page_numbers(a, b));
         middle_page_sum += page_update[page_update.len() / 2];
     }
 
