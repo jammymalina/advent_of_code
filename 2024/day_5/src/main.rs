@@ -3,7 +3,7 @@ use std::{cmp::Ordering, collections::HashSet};
 use nom::{
     bytes::complete::tag,
     character::complete::{char, digit1, line_ending},
-    combinator::{map_res, recognize},
+    combinator::map_res,
     multi::{many1, separated_list1},
     sequence::separated_pair,
     IResult,
@@ -38,7 +38,7 @@ impl Manual {
 }
 
 fn parse_integer(input: &str) -> IResult<&str, i32> {
-    map_res(recognize(digit1), |s: &str| s.parse::<i32>())(input)
+    map_res(digit1, str::parse)(input)
 }
 
 fn parse_pipe_pair(input: &str) -> IResult<&str, (i32, i32)> {

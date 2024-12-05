@@ -70,7 +70,7 @@ impl<I> ParseError<I> for EndOfParsing {
 }
 
 fn parse_integer(input: &str) -> IResult<&str, i32> {
-    map_res(digit1, |s: &str| s.parse::<i32>())(input)
+    map_res(digit1, str::parse)(input)
 }
 
 fn parse_mul_expr(input: &str) -> IResult<&str, Expr> {
