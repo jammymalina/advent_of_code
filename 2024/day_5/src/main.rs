@@ -74,7 +74,7 @@ fn main() {
 
     println!("Sum of middles of correctly sorted pages: {middle_page_sum}");
 
-    let incorrectly_sorted_pages: Vec<Vec<i32>> = page_updates
+    let incorrectly_sorted_pages: PageUpdates = page_updates
         .into_iter()
         .filter(|page_update| {
             page_update.len() >= 3 && !manual.check_page_update_order(page_update)
