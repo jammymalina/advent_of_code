@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+use rayon::prelude::*;
+use rustc_hash::FxHashSet as HashSet;
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq)]
 enum GuardDirection {
@@ -8,6 +9,7 @@ enum GuardDirection {
     West,
 }
 
+#[derive(Copy, Clone)]
 struct Guard {
     x: i32,
     y: i32,
@@ -24,12 +26,6 @@ impl Guard {
             _ => panic!("Unexpected direction symbol"),
         };
         Self { x, y, direction }
-    }
-
-    fn reset(&mut self, x: i32, y: i32, direction: GuardDirection) {
-        self.x = x;
-        self.y = y;
-        self.direction = direction;
     }
 
     fn turn_right(&mut self) {
@@ -57,6 +53,12 @@ impl Guard {
     }
 }
 
+struct TraverseInfo {
+    visited: HashSet<(i32, i32)>,
+    is_loop: bool,
+}
+
+#[derive(Clone)]
 struct Grid {
     width: i32,
     height: i32,
@@ -74,57 +76,60 @@ impl Grid {
         }
     }
 
-    fn guard_traverse(&mut self) -> Option<usize> {
-        let mut visited = HashSet::new();
-        let mut loop_check = HashSet::new();
+    fn guard_traverse(&self) -> TraverseInfo {
+        let mut guard = self.guard;
 
-        while self.guard.x >= 0
-            && self.guard.y >= 0
-            && self.guard.x < self.width
-            && self.guard.y < self.height
-        {
-            visited.insert((self.guard.x, self.guard.y));
-            if loop_check.contains(&(self.guard.x, self.guard.y, self.guard.direction)) {
-                return None;
+        let mut visited = HashSet::default();
+        let mut loop_check = HashSet::default();
+
+        while guard.x >= 0 && guard.y >= 0 && guard.x < self.width && guard.y < self.height {
+            visited.insert((guard.x, guard.y));
+            if loop_check.contains(&(guard.x, guard.y, guard.direction)) {
+                return TraverseInfo {
+                    visited,
+                    is_loop: true,
+                };
             }
-            loop_check.insert((self.guard.x, self.guard.y, self.guard.direction));
+            loop_check.insert((guard.x, guard.y, guard.direction));
 
-            let (next_x, next_y) = self.guard.get_next_forward_position();
+            let (next_x, next_y) = guard.get_next_forward_position();
 
             if self.obstacles.contains(&(next_x, next_y)) {
-                self.guard.turn_right();
+                guard.turn_right();
             } else {
-                self.guard.move_forward();
+                guard.move_forward();
             }
         }
 
-        Some(visited.len())
+        TraverseInfo {
+            visited,
+            is_loop: false,
+        }
     }
 
-    fn find_obstruction_count(&mut self) -> usize {
-        let mut count = 0;
+    fn find_obstruction_count(&self) -> i32 {
+        let traverse_info = self.guard_traverse();
 
-        let guard_x = self.guard.x;
-        let guard_y = self.guard.y;
-        let guard_dir = self.guard.direction;
-
-        for x in 0..self.width {
-            for y in 0..self.height {
-                if (x == guard_x && y == guard_y) || self.obstacles.contains(&(x, y)) {
-                    continue;
-                }
-
-                self.obstacles.insert((x, y));
-                let traverse_count = self.guard_traverse();
-                if traverse_count.is_none() {
-                    count += 1;
-                }
-                self.obstacles.remove(&(x, y));
-                self.guard.reset(guard_x, guard_y, guard_dir);
-            }
+        if traverse_info.is_loop {
+            return 0;
         }
 
-        count
+        let mut path = traverse_info.visited;
+        path.remove(&(self.guard.x, self.guard.y));
+
+        path.par_iter()
+            .map(|(x, y)| {
+                let mut grid = self.clone();
+                grid.add_obstacle(*x, *y);
+                let traverse_info = grid.guard_traverse();
+
+                i32::from(traverse_info.is_loop)
+            })
+            .sum()
+    }
+
+    fn add_obstacle(&mut self, x: i32, y: i32) {
+        self.obstacles.insert((x, y));
     }
 }
 
@@ -140,7 +145,7 @@ fn main() {
     assert!(grid_width > 0, "Input is invalid, line seems to be empty");
 
     let mut guards = vec![];
-    let mut obstacles = HashSet::new();
+    let mut obstacles = HashSet::default();
 
     for (y, line) in lines.into_iter().enumerate() {
         assert!(
@@ -154,12 +159,15 @@ fn main() {
                     obstacles.insert((x.try_into().unwrap(), y.try_into().unwrap()));
                 }
                 '.' => {}
-                _ => {
+                '^' | '>' | 'v' | '<' => {
                     guards.push(Guard::new(
                         x.try_into().unwrap(),
                         y.try_into().unwrap(),
                         field,
                     ));
+                }
+                _ => {
+                    panic!("Unknown symbol in the input");
                 }
             };
         }
@@ -168,15 +176,15 @@ fn main() {
     assert!(guards.len() == 1, "There must be exactly one guard");
     let guard = guards.into_iter().next().unwrap();
 
-    let mut grid = Grid::new(
+    let grid = Grid::new(
         grid_width.try_into().unwrap(),
         grid_height.try_into().unwrap(),
         guard,
         obstacles,
     );
 
-    // let guard_visited_fields = grid.guard_traverse().unwrap();
-    // println!("Guard visited {guard_visited_fields} fields before leaving the grid");
+    let guard_visited_fields = grid.guard_traverse().visited.len();
+    println!("Guard visited {guard_visited_fields} fields before leaving the grid");
 
     let loop_obstacle_count = grid.find_obstruction_count();
     println!("There are {loop_obstacle_count} options where to place obstruction to get guard stuck in the loop");
