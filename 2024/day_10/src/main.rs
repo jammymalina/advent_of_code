@@ -50,31 +50,26 @@ impl Grid {
         col: i32,
         target_height: u32,
     ) -> HashSet<(i32, i32)> {
-        let terrain_height = self.get_terrain_height(row, col);
-        if let Some(terrain_height) = terrain_height {
-            if terrain_height == target_height {
-                return vec![(row, col)].into_iter().collect();
-            }
-            vec![
-                (row - 1, col),
-                (row + 1, col),
-                (row, col - 1),
-                (row, col + 1),
-            ]
-            .into_par_iter()
-            .map(|(row, col)| (row, col, self.get_terrain_height(row, col)))
-            .filter(|(_, _, surr_terrain_height)| {
-                surr_terrain_height.map_or(false, |surr_terrain_height| {
-                    surr_terrain_height == terrain_height + 1
-                })
-            })
-            .flat_map(|(row, col, _)| {
-                self.find_reachable_target_from_coords(row, col, target_height)
-            })
-            .collect()
-        } else {
-            unreachable!()
+        let terrain_height = self.get_terrain_height(row, col).unwrap();
+        if terrain_height == target_height {
+            return vec![(row, col)].into_iter().collect();
         }
+
+        vec![
+            (row - 1, col),
+            (row + 1, col),
+            (row, col - 1),
+            (row, col + 1),
+        ]
+        .into_par_iter()
+        .map(|(row, col)| (row, col, self.get_terrain_height(row, col)))
+        .filter(|(_, _, surr_terrain_height)| {
+            surr_terrain_height.map_or(false, |surr_terrain_height| {
+                surr_terrain_height == terrain_height + 1
+            })
+        })
+        .flat_map(|(row, col, _)| self.find_reachable_target_from_coords(row, col, target_height))
+        .collect()
     }
 
     fn find_all_routes(&self, target_height: u32) -> u32 {
@@ -90,29 +85,26 @@ impl Grid {
     }
 
     fn find_route_from_coords(&self, row: i32, col: i32, target_height: u32) -> u32 {
-        let terrain_height = self.get_terrain_height(row, col);
-        if let Some(terrain_height) = terrain_height {
-            if terrain_height == target_height {
-                return 1;
-            }
-            vec![
-                (row - 1, col),
-                (row + 1, col),
-                (row, col - 1),
-                (row, col + 1),
-            ]
-            .into_par_iter()
-            .map(|(row, col)| (row, col, self.get_terrain_height(row, col)))
-            .filter(|(_, _, surr_terrain_height)| {
-                surr_terrain_height.map_or(false, |surr_terrain_height| {
-                    surr_terrain_height == terrain_height + 1
-                })
-            })
-            .map(|(row, col, _)| self.find_route_from_coords(row, col, target_height))
-            .sum()
-        } else {
-            unreachable!()
+        let terrain_height = self.get_terrain_height(row, col).unwrap();
+        if terrain_height == target_height {
+            return 1;
         }
+
+        vec![
+            (row - 1, col),
+            (row + 1, col),
+            (row, col - 1),
+            (row, col + 1),
+        ]
+        .into_par_iter()
+        .map(|(row, col)| (row, col, self.get_terrain_height(row, col)))
+        .filter(|(_, _, surr_terrain_height)| {
+            surr_terrain_height.map_or(false, |surr_terrain_height| {
+                surr_terrain_height == terrain_height + 1
+            })
+        })
+        .map(|(row, col, _)| self.find_route_from_coords(row, col, target_height))
+        .sum()
     }
 
     fn get_terrain_height(&self, row: i32, col: i32) -> Option<u32> {
