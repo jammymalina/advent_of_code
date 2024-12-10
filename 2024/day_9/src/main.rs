@@ -91,6 +91,53 @@ impl FileSystem {
     }
 
     fn compress_non_fragmented(&mut self) -> u64 {
+        let mut right_index = self.blocks.len() - 1;
+
+        while right_index != 0 {
+            while right_index > 0 && matches!(self.blocks[right_index], FileBlock::Empty(_)) {
+                right_index -= 1;
+            }
+
+            if right_index == 0 {
+                break;
+            }
+
+            let (file_id, file_block_size) = match self.blocks.get(right_index) {
+                Some(FileBlock::File(file_id, block_size)) => (*file_id, *block_size),
+                _ => unreachable!(),
+            };
+
+            let empty_block = &self.blocks[..right_index]
+                .iter()
+                .enumerate()
+                .find(|(_, block)| match block {
+                    FileBlock::Empty(block_size) => *block_size >= file_block_size,
+                    FileBlock::File(_, _) => false,
+                });
+
+            if empty_block.is_none() {
+                right_index -= 1;
+                continue;
+            }
+
+            let (empty_block_index, empty_block) = empty_block.unwrap();
+            let empty_block_size = match empty_block {
+                FileBlock::Empty(block_size) => *block_size,
+                FileBlock::File(_, _) => unreachable!(),
+            };
+
+            self.blocks[empty_block_index] = FileBlock::File(file_id, file_block_size);
+            self.blocks[right_index] = FileBlock::Empty(file_block_size);
+
+            let remaining_space = empty_block_size - file_block_size;
+            if remaining_space > 0 {
+                self.blocks
+                    .insert(empty_block_index + 1, FileBlock::Empty(remaining_space));
+            }
+
+            right_index -= 1;
+        }
+
         self.checksum()
     }
 
@@ -121,5 +168,9 @@ fn main() {
 
     let mut fs = FileSystem::new(input);
     let checksum = fs.compress_fragmented();
-    println!("Checksum after moving files to the left: {checksum}");
+    println!("Checksum after fragmented compression: {checksum}");
+
+    let mut fs = FileSystem::new(input);
+    let checksum = fs.compress_non_fragmented();
+    println!("Checksum after non-fragmented compression: {checksum}");
 }
